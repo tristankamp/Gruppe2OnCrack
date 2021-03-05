@@ -19,11 +19,11 @@ namespace SimpleServer
         /// Must be exactly the same algorithm that was used to encrypt the passwords in the password file
         /// </summary>
         private readonly HashAlgorithm _messageDigest;
-        List<string> dict = new List<string>();
-        string Password;
-        string SolvedPassword;
-        List<UserInfo> UI = new List<UserInfo>();
-        List<UserInfoClearText> UICT = new List<UserInfoClearText>();
+        private readonly List<string> _dict = new List<string>();
+        private string _password;
+        private string _solvedPassword;
+        private UserInfo _userInfo;
+        private UserInfoClearText _result;
 
         public Slave()
         {
@@ -35,12 +35,12 @@ namespace SimpleServer
 
         public void LavMitArbejde()
         {
-            TcpClient BallAndChain = new TcpClient();
+            TcpClient ballAndChain = new TcpClient();
 
-            BallAndChain.Connect(IPAddress.Loopback, 7);
+            ballAndChain.Connect(IPAddress.Loopback, 7);
 
-            StreamWriter sw = new StreamWriter(BallAndChain.GetStream());
-            StreamReader sr = new StreamReader(BallAndChain.GetStream());
+            StreamWriter sw = new StreamWriter(ballAndChain.GetStream());
+            StreamReader sr = new StreamReader(ballAndChain.GetStream());
 
             sw.AutoFlush = true;
 
@@ -49,7 +49,7 @@ namespace SimpleServer
             string message = sr.ReadLine();
             while (message!= "1029384756")
             {
-                dict.Add(message);
+                _dict.Add(message);
                 message = sr.ReadLine();
             }
 
@@ -58,42 +58,39 @@ namespace SimpleServer
             {
                 sw.WriteLine("1");
 
-                Password = sr.ReadLine();
+                _password = sr.ReadLine();
 
                 sw.WriteLine("Disconnect");
-                BallAndChain.Close();
+                ballAndChain.Close();
 
-                BallAndChain = new TcpClient();
+                ballAndChain = new TcpClient();
                 
 
 
-                if (Password == "fuck af")
+                if (_password == "fuck af")
                 {
                     break;
                 }
 
-                UI.Add(new UserInfo("0", Password.Split(":")[1]));
+                _userInfo = new UserInfo("0", _password.Split(":")[1]);
 
                 RunCracking();
 
-                if (UICT.Count > 0)
+                if (!(_result is null))
                 {
-                    SolvedPassword = UICT[0].Password;
+                    _solvedPassword = _result.Password;
                 }
 
-                else SolvedPassword = "Kunne ikke";
-
-                UI.Clear();
-                UICT.Clear();
+                else _solvedPassword = "Kunne ikke";
 
 
-                BallAndChain.Connect(IPAddress.Loopback, 7);
-                sw = new StreamWriter(BallAndChain.GetStream());
-                sr = new StreamReader(BallAndChain.GetStream());
+                ballAndChain.Connect(IPAddress.Loopback, 7);
+                sw = new StreamWriter(ballAndChain.GetStream());
+                sr = new StreamReader(ballAndChain.GetStream());
                 sw.AutoFlush = true;
 
                 sw.WriteLine("2");
-                sw.WriteLine(Password.Split(":")[0] + " " + SolvedPassword);
+                sw.WriteLine(_password.Split(":")[0] + " " + _solvedPassword);
 
 
 
@@ -118,22 +115,26 @@ namespace SimpleServer
         public void RunCracking()
         {
           
-            foreach (string ord in dict)
-            {
-                UICT = CheckWordWithVariations(ord, UI).ToList();
+            //foreach (string ord in dict)
+            //{
+            //    CheckWordWithVariations(ord, UI);
 
-                if (UICT.Count == 1)
-                {
-                    break;
-                }
+            //    if (!(_result is null))
+            //    {
+            //        break;
+            //    }
+            //}
+
+            int count = 0;
+            int length = _dict.Count;
+            while (_result is null && count < length)
+            {
+                CheckWordWithVariations(_dict[count++], _userInfo);
             }
 
-            List<UserInfoClearText> result = new List<UserInfoClearText>();
-
-           
-            Console.WriteLine(string.Join(", ", result));
+            //                                                              Console.WriteLine(string.Join(", ", result));
             //                                                              Console.WriteLine("Out of {0} password {1} was found ", userInfos.Count, result.Count);
-            Console.WriteLine();
+            //                                                              Console.WriteLine();
             
         }
 
@@ -143,42 +144,30 @@ namespace SimpleServer
         /// <param name="dictionaryEntry">A single word from the dictionary</param>
         /// <param name="userInfos">List of (username, encrypted password) pairs from the password file</param>
         /// <returns>A list of (username, readable password) pairs. The list might be empty</returns>
-        private IEnumerable<UserInfoClearText> CheckWordWithVariations(String dictionaryEntry, List<UserInfo> userInfos)
+        private void CheckWordWithVariations(String dictionaryEntry, UserInfo userInfo)
         {
-            List<UserInfoClearText> result = new List<UserInfoClearText>(); //might be empty
-
             String possiblePassword = dictionaryEntry;
-            IEnumerable<UserInfoClearText> partialResult = CheckSingleWord(userInfos, possiblePassword);
-            result.AddRange(partialResult);
+            CheckSingleWord(userInfo, possiblePassword);
 
             String possiblePasswordUpperCase = dictionaryEntry.ToUpper();
-            IEnumerable<UserInfoClearText> partialResultUpperCase =
-                CheckSingleWord(userInfos, possiblePasswordUpperCase);
-            result.AddRange(partialResultUpperCase);
+            CheckSingleWord(userInfo, possiblePasswordUpperCase);
 
             String possiblePasswordCapitalized = StringUtilities.Capitalize(dictionaryEntry);
-            IEnumerable<UserInfoClearText> partialResultCapitalized =
-                CheckSingleWord(userInfos, possiblePasswordCapitalized);
-            result.AddRange(partialResultCapitalized);
+            CheckSingleWord(userInfo, possiblePasswordCapitalized);
 
             String possiblePasswordReverse = StringUtilities.Reverse(dictionaryEntry);
-            IEnumerable<UserInfoClearText> partialResultReverse = CheckSingleWord(userInfos, possiblePasswordReverse);
-            result.AddRange(partialResultReverse);
+            CheckSingleWord(userInfo, possiblePasswordReverse);
 
             for (int i = 0; i < 100; i++)
             {
                 String possiblePasswordEndDigit = dictionaryEntry + i;
-                IEnumerable<UserInfoClearText> partialResultEndDigit =
-                    CheckSingleWord(userInfos, possiblePasswordEndDigit);
-                result.AddRange(partialResultEndDigit);
+                CheckSingleWord(userInfo, possiblePasswordEndDigit);
             }
 
             for (int i = 0; i < 100; i++)
             {
                 String possiblePasswordStartDigit = i + dictionaryEntry;
-                IEnumerable<UserInfoClearText> partialResultStartDigit =
-                    CheckSingleWord(userInfos, possiblePasswordStartDigit);
-                result.AddRange(partialResultStartDigit);
+                CheckSingleWord(userInfo, possiblePasswordStartDigit);
             }
 
             for (int i = 0; i < 10; i++)
@@ -186,13 +175,9 @@ namespace SimpleServer
                 for (int j = 0; j < 10; j++)
                 {
                     String possiblePasswordStartEndDigit = i + dictionaryEntry + j;
-                    IEnumerable<UserInfoClearText> partialResultStartEndDigit =
-                        CheckSingleWord(userInfos, possiblePasswordStartEndDigit);
-                    result.AddRange(partialResultStartEndDigit);
+                    CheckSingleWord(userInfo, possiblePasswordStartEndDigit);
                 }
             }
-
-            return result;
         }
 
         /// <summary>
@@ -201,7 +186,7 @@ namespace SimpleServer
         /// <param name="userInfos"></param>
         /// <param name="possiblePassword">List of (username, encrypted password) pairs from the password file</param>
         /// <returns>A list of (username, readable password) pairs. The list might be empty</returns>
-        private IEnumerable<UserInfoClearText> CheckSingleWord(IEnumerable<UserInfo> userInfos, String possiblePassword)
+        private void CheckSingleWord(UserInfo userInfo, String possiblePassword)
         {
             char[] charArray = possiblePassword.ToCharArray();
             byte[] passwordAsBytes = Array.ConvertAll(charArray, PasswordFileHandler.GetConverter());
@@ -209,18 +194,20 @@ namespace SimpleServer
             byte[] encryptedPassword = _messageDigest.ComputeHash(passwordAsBytes);
             //string encryptedPasswordBase64 = System.Convert.ToBase64String(encryptedPassword);
 
-            List<UserInfoClearText> results = new List<UserInfoClearText>();
+            //foreach (UserInfo userInfo in userInfos) //Decrypted passwords should be removed. Duplicate hash should be removed.
+            //{
+            //    if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword))  //compares byte arrays
+            //    {
+            //        _result = new UserInfoClearText(userInfo.Username, possiblePassword);
+            //        Console.WriteLine(userInfo.Username + " " + possiblePassword);
+            //    }
+            //}
 
-            foreach (UserInfo userInfo in userInfos)
+            if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword))  //compares byte arrays
             {
-                if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword)) //compares byte arrays
-                {
-                    results.Add(new UserInfoClearText(userInfo.Username, possiblePassword));
-                    Console.WriteLine(userInfo.Username + " " + possiblePassword);
-                }
+                _result = new UserInfoClearText(userInfo.Username, possiblePassword);
+                Console.WriteLine(userInfo.Username + " " + possiblePassword);
             }
-
-            return results;
         }
 
         /// <summary>
@@ -243,13 +230,11 @@ namespace SimpleServer
             {
                 return false;
             }
-
             for (int i = 0; i < firstArray.Count; i++)
             {
                 if (firstArray[i] != secondArray[i])
                     return false;
             }
-
             return true;
         }
 

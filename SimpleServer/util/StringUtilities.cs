@@ -31,11 +31,28 @@ namespace SimpleServer.util
             {
                 return str;
             }
-            StringBuilder reverseString = new StringBuilder();
-            for (int i = 0; i < str.Length; i++)
+            return ReverseWithoutStringBuilder(str);
+        }
+
+        private static string ReverseWithoutStringBuilder(string str)
+        {
+            string reverseStr = "";
+            for (int i = str.Length - 1; i >= 0; i--)
             {
-                reverseString.Append(str.ElementAt(str.Length - 1 - i));
+                reverseStr += str[i];
             }
+
+            return reverseStr;
+        }
+
+        private static string ReverseWithStringBuilder(string str)
+        {
+            StringBuilder reverseString = new StringBuilder();
+            for (int i = str.Length - 1; i >= 0; i--)
+            {
+                reverseString.Append(str[i]);
+            }
+
             return reverseString.ToString();
         }
     }
