@@ -44,10 +44,13 @@ namespace SimpleServer
 
             sw.AutoFlush = true;
 
+
             sw.WriteLine("0");
-            while (!sr.EndOfStream)
+            string message = sr.ReadLine();
+            while (message!= "1029384756")
             {
-                dict.Add(sr.ReadLine());
+                dict.Add(message);
+                message = sr.ReadLine();
             }
 
 
@@ -57,22 +60,41 @@ namespace SimpleServer
 
                 Password = sr.ReadLine();
 
+                sw.WriteLine("Disconnect");
+                BallAndChain.Close();
+
+                BallAndChain = new TcpClient();
+                
+
+
                 if (Password == "fuck af")
                 {
                     break;
                 }
 
-                UI.Add(new UserInfo("0", Password));
+                UI.Add(new UserInfo("0", Password.Split(":")[1]));
 
                 RunCracking();
 
-                SolvedPassword = UICT[0].Password;
+                if (UICT.Count > 0)
+                {
+                    SolvedPassword = UICT[0].Password;
+                }
+
+                else SolvedPassword = "Kunne ikke";
 
                 UI.Clear();
                 UICT.Clear();
 
+
+                BallAndChain.Connect(IPAddress.Loopback, 7);
+                sw = new StreamWriter(BallAndChain.GetStream());
+                sr = new StreamReader(BallAndChain.GetStream());
+                sw.AutoFlush = true;
+
                 sw.WriteLine("2");
-                sw.WriteLine(Password);
+                sw.WriteLine(Password.Split(":")[0] + " " + SolvedPassword);
+
 
 
 
@@ -95,22 +117,24 @@ namespace SimpleServer
         /// </summary>
         public void RunCracking()
         {
-            Stopwatch stopwatch = Stopwatch.StartNew();
-
+          
             foreach (string ord in dict)
             {
                 UICT = CheckWordWithVariations(ord, UI).ToList();
+
+                if (UICT.Count == 1)
+                {
+                    break;
+                }
             }
 
             List<UserInfoClearText> result = new List<UserInfoClearText>();
 
-
-            stopwatch.Stop();
+           
             Console.WriteLine(string.Join(", ", result));
             //                                                              Console.WriteLine("Out of {0} password {1} was found ", userInfos.Count, result.Count);
             Console.WriteLine();
-            Console.WriteLine("Time elapsed: {0}", stopwatch.Elapsed);
-            Console.ReadLine();
+            
         }
 
         /// <summary>

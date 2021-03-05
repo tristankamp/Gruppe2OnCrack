@@ -24,18 +24,17 @@ namespace TCPLibrary.TCPServer
 
         public void start()
         { 
-            ts.TraceEvent(TraceEventType.Information,1337,"Dette er information");
-            ts.TraceEvent(TraceEventType.Error, 1337, "Dette er fejl");
+            
         }
 
         public void startmessage()
         {
-            ts.TraceEvent(TraceEventType.Information, 1337, "Programmet er startet");
+            
         }
 
         public void connectedmessage()
         {
-            ts.TraceEvent(TraceEventType.Information, 1337, "A new face touches the beacon");
+            
         }
 
     }

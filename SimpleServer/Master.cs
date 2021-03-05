@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
@@ -11,14 +12,14 @@ using TCPLibrary.TCPServer;
 
 namespace SimpleServer
 {
-    class Master:AbstractTCPServer
+    class Master : AbstractTCPServer
     {
         List<string> dict = new List<string>();
         public BlockingCollection<string> passwords = new BlockingCollection<string>();
         List<string> SolvedPasswords = new List<string>();
         public Master()
         {
-            
+
             FileStream fs = new FileStream(@"C:\Users\trist\Documents\skole\advancedprogramming\SimpleServer\webster-dictionary.txt", FileMode.Open, FileAccess.Read);
 
             StreamReader sr = new StreamReader(fs);
@@ -42,40 +43,52 @@ namespace SimpleServer
 
         }
 
+        
+
+
         protected override void TcpServerWork(StreamReader sr, StreamWriter sw, int PortNumber, string Name)
         {
             sw.AutoFlush = true;
-            
-            switch (sr.ReadLine())
+
+            while (true)
             {
-                case "0":
-                    foreach (string line in dict)
-                    {
-                        sw.WriteLine(line);
-                        
-                    }
-                    break;
+                switch (sr.ReadLine())
+                {
 
-                case "1":
-                    if (passwords.Count > 0)
-                    {
-                        sw.WriteLine(passwords.Take());
-                        Console.WriteLine("passwords given");
-                    }
-                    else sw.WriteLine("fuck af");
+                    case "0":
+                        foreach (string line in dict)
+                        {
+                            sw.WriteLine(line);
 
-                    break;
+                        }
+                        Console.WriteLine("dict given");
+                        sw.WriteLine("1029384756");
+                        break;
 
-                case "2":
-                    SolvedPasswords.Add(sr.ReadLine());
-                    foreach (string password in SolvedPasswords)
-                    {
-                        Console.WriteLine(password);
-                    }
-                    break;
+                    case "1":
+                        if (passwords.Count > 0)
+                        {
+                            sw.WriteLine(passwords.Take());
+                            Console.WriteLine("passwords given");
+                        }
+                        else sw.WriteLine("fuck af");
+
+                        break;
+
+                    case "2":
+                        SolvedPasswords.Add(sr.ReadLine());
+                        foreach (string password in SolvedPasswords)
+                        {
+                            Console.WriteLine(password);
+                        }
+                        break;
+
+                    case "Disconnect":
+
+                        return;
+                       
+                }
             }
-
-
         }
     }
 }
