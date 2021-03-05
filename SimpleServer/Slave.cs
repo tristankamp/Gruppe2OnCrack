@@ -62,7 +62,6 @@ namespace SimpleServer
 
                 sw.WriteLine("Disconnect");
                 ballAndChain.Close();
-
                 ballAndChain = new TcpClient();
                 
 
@@ -72,13 +71,15 @@ namespace SimpleServer
                     break;
                 }
 
-                _userInfo = new UserInfo("0", _password.Split(":")[1]);
+                string[] split = _password.Split(":");
+                _userInfo = new UserInfo(split[0], split[1]);
 
                 RunCracking();
 
                 if (!(_result is null))
                 {
                     _solvedPassword = _result.Password;
+                    _result = null;
                 }
 
                 else _solvedPassword = "Kunne ikke";
@@ -206,7 +207,7 @@ namespace SimpleServer
             if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword))  //compares byte arrays
             {
                 _result = new UserInfoClearText(userInfo.Username, possiblePassword);
-                Console.WriteLine(userInfo.Username + " " + possiblePassword);
+                //Console.WriteLine(userInfo.Username + " " + possiblePassword);
             }
         }
 

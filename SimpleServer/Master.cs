@@ -20,7 +20,7 @@ namespace SimpleServer
         public Master()
         {
 
-            FileStream fs = new FileStream(@"C:\Users\trist\Documents\skole\advancedprogramming\SimpleServer\webster-dictionary.txt", FileMode.Open, FileAccess.Read);
+            FileStream fs = new FileStream(Paths.DICT_PATH, FileMode.Open, FileAccess.Read);
 
             StreamReader sr = new StreamReader(fs);
 
@@ -29,7 +29,7 @@ namespace SimpleServer
                 dict.Add(sr.ReadLine());
             }
 
-            FileStream fsp = new FileStream(@"C:\Users\trist\Documents\skole\advancedprogramming\SimpleServer\passwords.txt", FileMode.Open, FileAccess.Read);
+            FileStream fsp = new FileStream(Paths.PASSWORD_PATH, FileMode.Open, FileAccess.Read);
 
             StreamReader srp = new StreamReader(fsp);
 

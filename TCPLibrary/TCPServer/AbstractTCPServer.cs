@@ -39,18 +39,18 @@ namespace TCPLibrary.TCPServer
 
             Task.Run(StopListener);
 
-            String path = Environment.GetEnvironmentVariable("AbstractServerConf");
+            //String path = Environment.GetEnvironmentVariable("AbstractServerConf");
 
-            XmlDocument configDoc = new XmlDocument();
-            configDoc.Load(path);
+            //XmlDocument configDoc = new XmlDocument();
+            //configDoc.Load(path);
 
-            XmlNode xxNode = configDoc.DocumentElement.SelectSingleNode("ServerPort");
-            if (xxNode != null)
-            {
-                String xxStr = xxNode.InnerText.Trim();
-                int xx = Convert.ToInt32(xxStr);
-                Console.WriteLine(xx);
-            }
+            //XmlNode xxNode = configDoc.DocumentElement.SelectSingleNode("ServerPort");
+            //if (xxNode != null)
+            //{
+            //    String xxStr = xxNode.InnerText.Trim();
+            //    int xx = Convert.ToInt32(xxStr);
+            //    Console.WriteLine(xx);
+            //}
 
             while (Running)
             {
