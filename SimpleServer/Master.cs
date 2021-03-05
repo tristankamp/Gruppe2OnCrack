@@ -14,11 +14,14 @@ namespace SimpleServer
 {
     class Master : AbstractTCPServer
     {
-        List<string> dict = new List<string>();
-        public BlockingCollection<string> passwords = new BlockingCollection<string>();
-        List<string> SolvedPasswords = new List<string>();
+        private readonly List<string> _dict;
+        private readonly BlockingCollection<string> _passwords;
+        private readonly List<string> _solvedPasswords;
         public Master()
         {
+            _dict = new List<string>();
+            _passwords = new BlockingCollection<string>();
+            _solvedPasswords = new List<string>();
 
             FileStream fs = new FileStream(Paths.DICT_PATH, FileMode.Open, FileAccess.Read);
 
@@ -26,8 +29,10 @@ namespace SimpleServer
 
             while (!sr.EndOfStream)
             {
-                dict.Add(sr.ReadLine());
+                _dict.Add(sr.ReadLine());
             }
+
+            sr.Close();
 
             FileStream fsp = new FileStream(Paths.PASSWORD_PATH, FileMode.Open, FileAccess.Read);
 
@@ -35,16 +40,11 @@ namespace SimpleServer
 
             while (!srp.EndOfStream)
             {
-                passwords.Add(srp.ReadLine());
+                _passwords.Add(srp.ReadLine());
             }
 
-            sr.Close();
             srp.Close();
-
         }
-
-        
-
 
         protected override void TcpServerWork(StreamReader sr, StreamWriter sw, int PortNumber, string Name)
         {
@@ -54,41 +54,42 @@ namespace SimpleServer
             {
                 switch (sr.ReadLine())
                 {
-
-                    case "0":
-                        foreach (string line in dict)
-                        {
-                            sw.WriteLine(line);
-
-                        }
-                        Console.WriteLine("dict given");
-                        sw.WriteLine("1029384756");
-                        break;
-
-                    case "1":
-                        if (passwords.Count > 0)
-                        {
-                            sw.WriteLine(passwords.Take());
-                            Console.WriteLine("passwords given");
-                        }
-                        else sw.WriteLine("fuck af");
-
-                        break;
-
-                    case "2":
-                        SolvedPasswords.Add(sr.ReadLine());
-                        foreach (string password in SolvedPasswords)
-                        {
-                            Console.WriteLine(password);
-                        }
-                        break;
-
-                    case "Disconnect":
-
-                        return;
-                       
+                    case "0": SendDictionary(sw); break;
+                    case "1": SendSinglePassword(sw); break;
+                    case "2": GetSolvedPassword(sr); break;
+                    case "Disconnect": return;
                 }
             }
+        }
+
+        private void GetSolvedPassword(StreamReader sr)
+        {
+            _solvedPasswords.Add(sr.ReadLine());
+            foreach (string password in _solvedPasswords)
+            {
+                Console.WriteLine(password);
+            }
+        }
+
+        private void SendSinglePassword(StreamWriter sw)
+        {
+            if (_passwords.Count > 0)
+            {
+                sw.WriteLine(_passwords.Take());
+                Console.WriteLine("passwords given");
+            }
+            else sw.WriteLine("fuck af");
+        }
+
+        private void SendDictionary(StreamWriter sw)
+        {
+            foreach (string line in _dict)
+            {
+                sw.WriteLine(line);
+            }
+
+            Console.WriteLine("dict given");
+            sw.WriteLine("1029384756");
         }
     }
 }

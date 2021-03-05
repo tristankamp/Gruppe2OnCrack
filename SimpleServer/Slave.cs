@@ -19,31 +19,20 @@ namespace SimpleServer
         /// Must be exactly the same algorithm that was used to encrypt the passwords in the password file
         /// </summary>
         private readonly HashAlgorithm _messageDigest;
-        private readonly List<string> _dict = new List<string>();
-        private string _password;
-        private string _solvedPassword;
+        private readonly List<string> _dict;
         private UserInfo _userInfo;
         private UserInfoClearText _result;
 
         public Slave()
         {
             _messageDigest = new SHA1CryptoServiceProvider();
-            //_messageDigest = new MD5CryptoServiceProvider();
-            // seems to be same speed
+            _dict = new List<string>();
         }
 
 
-        public void LavMitArbejde()
+        public void Work()
         {
-            TcpClient ballAndChain = new TcpClient();
-
-            ballAndChain.Connect(IPAddress.Loopback, 7);
-
-            StreamWriter sw = new StreamWriter(ballAndChain.GetStream());
-            StreamReader sr = new StreamReader(ballAndChain.GetStream());
-
-            sw.AutoFlush = true;
-
+            ConnectTcpWithAutoFlush(out TcpClient ballAndChain, out StreamWriter sw, out StreamReader sr);
 
             sw.WriteLine("0");
             string message = sr.ReadLine();
@@ -58,93 +47,62 @@ namespace SimpleServer
             {
                 sw.WriteLine("1");
 
-                _password = sr.ReadLine();
+                string password = sr.ReadLine();
 
                 sw.WriteLine("Disconnect");
                 ballAndChain.Close();
-                ballAndChain = new TcpClient();
                 
 
-
-                if (_password == "fuck af")
+                if (password == "fuck af" || password is null)
                 {
                     break;
                 }
 
-                string[] split = _password.Split(":");
+                string[] split = password.Split(':');
                 _userInfo = new UserInfo(split[0], split[1]);
 
                 RunCracking();
 
-                if (!(_result is null))
-                {
-                    _solvedPassword = _result.Password;
-                    _result = null;
-                }
+                var solvedPassword = !(_result is null) ? _result.Password : "Kunne ikke";
+                _result = null;
 
-                else _solvedPassword = "Kunne ikke";
-
-
-                ballAndChain.Connect(IPAddress.Loopback, 7);
-                sw = new StreamWriter(ballAndChain.GetStream());
-                sr = new StreamReader(ballAndChain.GetStream());
-                sw.AutoFlush = true;
+                ConnectTcpWithAutoFlush(out ballAndChain, out sw, out sr);
 
                 sw.WriteLine("2");
-                sw.WriteLine(_password.Split(":")[0] + " " + _solvedPassword);
-
-
-
-
+                sw.WriteLine(split[0] + " " + solvedPassword);
             }
-            
-
-
-
         }
 
+        private void ConnectTcpWithAutoFlush(out TcpClient client, out StreamWriter sw, out StreamReader sr)
+        {
+            client = new TcpClient();
+            client.Connect(IPAddress.Loopback, 7);
 
+            NetworkStream stream = client.GetStream();
+            sr = new StreamReader(stream);
+            sw = new StreamWriter(stream);
 
-
-
-
-
+            sw.AutoFlush = true;
+        }
 
         /// <summary>
         /// Runs the password cracking algorithm
         /// </summary>
-        public void RunCracking()
+        private void RunCracking()
         {
-          
-            //foreach (string ord in dict)
-            //{
-            //    CheckWordWithVariations(ord, UI);
-
-            //    if (!(_result is null))
-            //    {
-            //        break;
-            //    }
-            //}
-
             int count = 0;
             int length = _dict.Count;
             while (_result is null && count < length)
             {
                 CheckWordWithVariations(_dict[count++], _userInfo);
             }
-
-            //                                                              Console.WriteLine(string.Join(", ", result));
-            //                                                              Console.WriteLine("Out of {0} password {1} was found ", userInfos.Count, result.Count);
-            //                                                              Console.WriteLine();
-            
         }
 
         /// <summary>
-        /// Generates a lot of variations, encrypts each of the and compares it to all entries in the password file
+        /// Generates a lot of variations, encrypts each of the and compares it to an entry in the password file
         /// </summary>
         /// <param name="dictionaryEntry">A single word from the dictionary</param>
-        /// <param name="userInfos">List of (username, encrypted password) pairs from the password file</param>
-        /// <returns>A list of (username, readable password) pairs. The list might be empty</returns>
+        /// <param name="userInfo">Username, encrypted password from the password file</param>
         private void CheckWordWithVariations(String dictionaryEntry, UserInfo userInfo)
         {
             String possiblePassword = dictionaryEntry;
@@ -182,28 +140,17 @@ namespace SimpleServer
         }
 
         /// <summary>
-        /// Checks a single word (or rather a variation of a word): Encrypts and compares to all entries in the password file
+        /// Checks a single word (or rather a variation of a word): Encrypts and compares to an entry in the password file
         /// </summary>
-        /// <param name="userInfos"></param>
-        /// <param name="possiblePassword">List of (username, encrypted password) pairs from the password file</param>
-        /// <returns>A list of (username, readable password) pairs. The list might be empty</returns>
+        /// <param name="userInfo">Username, encrypted password from the password file</param>
+        /// <param name="possiblePassword">Username, encrypted password pair from the password file</param>
         private void CheckSingleWord(UserInfo userInfo, String possiblePassword)
         {
             char[] charArray = possiblePassword.ToCharArray();
             byte[] passwordAsBytes = Array.ConvertAll(charArray, PasswordFileHandler.GetConverter());
 
             byte[] encryptedPassword = _messageDigest.ComputeHash(passwordAsBytes);
-            //string encryptedPasswordBase64 = System.Convert.ToBase64String(encryptedPassword);
-
-            //foreach (UserInfo userInfo in userInfos) //Decrypted passwords should be removed. Duplicate hash should be removed.
-            //{
-            //    if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword))  //compares byte arrays
-            //    {
-            //        _result = new UserInfoClearText(userInfo.Username, possiblePassword);
-            //        Console.WriteLine(userInfo.Username + " " + possiblePassword);
-            //    }
-            //}
-
+            
             if (CompareBytes(userInfo.EntryptedPassword, encryptedPassword))  //compares byte arrays
             {
                 _result = new UserInfoClearText(userInfo.Username, possiblePassword);
@@ -219,14 +166,6 @@ namespace SimpleServer
         /// <returns></returns>
         private static bool CompareBytes(IList<byte> firstArray, IList<byte> secondArray)
         {
-            //if (secondArray == null)
-            //{
-            //    throw new ArgumentNullException("firstArray");
-            //}
-            //if (secondArray == null)
-            //{
-            //    throw new ArgumentNullException("secondArray");
-            //}
             if (firstArray.Count != secondArray.Count)
             {
                 return false;
